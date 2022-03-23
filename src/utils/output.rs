@@ -7,7 +7,7 @@ pub struct CodeError {
 }
 
 impl fmt::Display for CodeError {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let mut text: String = "\x1b[0m\x1b[31;1merror\x1b[0m".to_string();
 
         if let Some(ref message) = self.message {
@@ -15,9 +15,13 @@ impl fmt::Display for CodeError {
         }
 
         if let Some(ref location) = self.location {
-            let padding = " ".repeat(location.line.to_string().len() + 1);
-            let script = fs::read_to_string(&location.file).expect("no such file or directory");
-            let error_script = script.lines().nth(location.line - 1).unwrap();
+            let script = location.get_script();
+
+            let line = location.get_line();
+            let columns = location.get_columns();
+
+            let padding = " ".repeat((line + 1).to_string().len() + 1);
+            let error_script = script.lines().nth(line).unwrap();
 
             // error location
             text.push_str(
@@ -25,9 +29,9 @@ impl fmt::Display for CodeError {
                     "\n{}\x1b[34;1m@->\x1b[0m {}:{}:{}..{}",
                     padding,
                     location.file,
-                    location.line,
-                    location.columns.start,
-                    location.columns.end
+                    line,
+                    columns.start,
+                    columns.end
                 )
                 .as_str(),
             );
@@ -36,29 +40,22 @@ impl fmt::Display for CodeError {
             text.push_str(format!("\n{}\x1b[34;1m|\x1b[0m", padding).as_str());
 
             // problematic code
-            text.push_str(
-                format!("\n\x1b[34;1m{} |\x1b[0m {}", location.line, error_script).as_str(),
-            );
+            text.push_str(format!("\n\x1b[34;1m{} |\x1b[0m {}", line, error_script).as_str());
 
             // underline problematic code
             text.push_str(
                 format!(
-                    "\n{}\x1b[34;1m|\x1b[0m \x1b[31;1m{}\x1b[0m",
+                    "\n{}\x1b[34;1m|\x1b[0m {}\x1b[31;1m{}\x1b[0m",
                     padding,
-                    "^".repeat(location.columns.end - location.columns.start)
+                    " ".repeat(columns.start),
+                    "^".repeat(columns.len())
                 )
                 .as_str(),
             );
         }
 
         if let Some(ref note) = self.note {
-            text.push_str(
-                format!(
-                    "\n\x1b[35;1mfix\x1b[39m:\x1b[0m {}\x1b[0m",
-                    note
-                )
-                .as_str(),
-            );
+            text.push_str(format!("\n\x1b[35;1mfix\x1b[39m:\x1b[0m {}\x1b[0m", note).as_str());
         }
 
         write!(f, "{}", text)?;
@@ -68,6 +65,31 @@ impl fmt::Display for CodeError {
 
 pub struct CodeErrorLocation {
     pub file: String,
-    pub line: usize,
-    pub columns: std::ops::Range<usize>,
+    pub locus: std::ops::Range<usize>,
+}
+
+impl CodeErrorLocation {
+    pub fn get_script(&self) -> String {
+        fs::read_to_string(&self.file).expect("no such file or directory")
+    }
+
+    pub fn get_line(&self) -> usize {
+        self.get_script()[..self.locus.start].matches('\n').count()
+    }
+
+    pub fn get_columns(&self) -> std::ops::Range<usize> {
+        let line = self.get_line();
+
+        if line == 0 {
+            self.locus.clone()
+        } else {
+            let row_start = self
+                .get_script()
+                .match_indices('\n')
+                .nth(line - 1)
+                .expect("no such line")
+                .0;
+            (self.locus.start - row_start)..(self.locus.end - row_start)
+        }
+    }
 }
