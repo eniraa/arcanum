@@ -1,0 +1,89 @@
+name: Lint & Test
+
+on:
+  push:
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.after }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+      - uses: actions-rs/cargo@v1
+        with:
+          command: check
+
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+      - uses: actions-rs/cargo@v1
+        with:
+          command: test
+
+  fmt:
+    name: Format
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+      - run: rustup component add rustfmt
+      - uses: actions-rs/cargo@v1
+        with:
+          command: fmt
+          args: --all -- --check
+
+  clippy:
+    name: Clippy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+      - run: rustup component add clippy
+      - uses: actions-rs/cargo@v1
+        with:
+          command: clippy
+          args: -- -D warnings
+
+  artifact:
+    name: Generate Artifact
+    needs: [check,test,fmt,clippy]
+    if: always() && !${{ cancelled() }}
+    runs-on: ubuntu-latest
+    steps:
+    - name: Prepare Pull Request Payload Artifact
+      id: prepare-artifact
+      if: always() && github.event_name == 'pull_request'
+      continue-on-error: true
+      run: cat $GITHUB_EVENT_PATH | jq '.pull_request' > pull_request_payload.json
+    - name: Upload a Build Artifact
+      if: always() && steps.prepare-artifact.outcome == 'success'
+      continue-on-error: true
+      uses: actions/upload-artifact@v3
+      with:
+        name: pull-request-payload
+        path: pull_request_payload.json

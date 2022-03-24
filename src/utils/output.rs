@@ -27,11 +27,7 @@ impl fmt::Display for CodeError {
             text.push_str(
                 format!(
                     "\n{}\x1b[34;1m@->\x1b[0m {}:{}:{}..{}",
-                    padding,
-                    location.file,
-                    line,
-                    columns.start,
-                    columns.end
+                    padding, location.file, line, columns.start, columns.end
                 )
                 .as_str(),
             );
