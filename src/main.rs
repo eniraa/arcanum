@@ -1,7 +1,7 @@
 use std::{env, fs, process};
 
 mod utils;
-use utils::output::CodeError;
+use utils::output::{Issue, IssueGenus};
 
 fn main() {
     let args: Vec<String> = env::args().collect();
@@ -9,10 +9,11 @@ fn main() {
     if args.len() != 2 {
         eprintln!(
             "{}",
-            CodeError {
+            Issue {
+                genus: IssueGenus::Error,
                 message: Some("invalid arguments, expected 1 argument".to_string()),
                 location: None,
-                note: Some(format!("the expected format is `{} [script]`", args[0])),
+                help: Some(format!("the expected format is `{} [script]`", args[0])),
             }
         );
         process::exit(1);
@@ -23,10 +24,11 @@ fn main() {
         Err(_) => {
             eprintln!(
                 "{}",
-                CodeError {
+                Issue {
+                    genus: IssueGenus::Error,
                     message: Some("no such file or directory".to_string()),
                     location: None,
-                    note: None,
+                    help: None,
                 }
             );
             process::exit(1);
