@@ -6,7 +6,7 @@ arcanum is a "useful" hobby programming language.
 
 In my first attempt at a programming language, I made [boxscript](https://github.com/eniraa/boxscript-py), an esolang that exclusively used boxes as code, which resulted in it essentially being a less ergonomic version of brainfuck. The parsing was a mess, because the syntax was quite different from traditional programming language syntax, and also because I had to make it in the span of a single week with no prior experience or knowledge creating languages.
 
-This will be my second attempt at a programming language, and I'm hoping to make it a bit more useful. It will definitely be ambitious, but rather than having a week to complete it, I have no hard deadlines. This time, I'll do things right: using LLVM for its optimizations, using LALRPOP for parsing rather than hacky regexes, etcetera.
+This will be my second attempt at a programming language, and I'm hoping to make it a bit more useful. It will definitely be ambitious, but rather than having a week to complete it, I have no hard deadlines. This time, I'll do things right: actually learning how shit works instead of, y'know, hacking together a piece of junk.
 
 ## Usage
 
